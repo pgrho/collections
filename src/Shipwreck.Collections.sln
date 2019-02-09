@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.329
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shipwreck.Collections", "Shipwreck.Collections\Shipwreck.Collections.csproj", "{E4784E07-0441-469E-863E-DCFF7836CBD1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shipwreck.Collections.Demo", "Shipwreck.Collections.Demo\Shipwreck.Collections.Demo.csproj", "{97C2FADA-77F5-44DE-99A9-483BBD23DC64}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E4784E07-0441-469E-863E-DCFF7836CBD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4784E07-0441-469E-863E-DCFF7836CBD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4784E07-0441-469E-863E-DCFF7836CBD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4784E07-0441-469E-863E-DCFF7836CBD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97C2FADA-77F5-44DE-99A9-483BBD23DC64}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97C2FADA-77F5-44DE-99A9-483BBD23DC64}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97C2FADA-77F5-44DE-99A9-483BBD23DC64}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97C2FADA-77F5-44DE-99A9-483BBD23DC64}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1D71DF3B-76AE-4C3F-AD6B-6FDF276FC696}
+	EndGlobalSection
+EndGlobal
