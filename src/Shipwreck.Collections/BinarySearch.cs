@@ -66,6 +66,8 @@ namespace Shipwreck.Collections
         }
     }
 
+#if !SHIPWRECK_COLLECTIONS_NO_ARRAY
+
 #if SHIPWRECK_COLLECTIONS_PUBLIC
 
     public
@@ -185,6 +187,10 @@ namespace Shipwreck.Collections
         #endregion IComparer<T>
     }
 
+#endif
+
+#if !SHIPWRECK_COLLECTIONS_NO_LIST
+
 #if SHIPWRECK_COLLECTIONS_PUBLIC
 
     public
@@ -302,6 +308,10 @@ namespace Shipwreck.Collections
         #endregion IComparer<T>
     }
 
+#endif
+
+#if !SHIPWRECK_COLLECTIONS_NO_COLLECTION
+
 #if SHIPWRECK_COLLECTIONS_PUBLIC
 
     public
@@ -418,4 +428,248 @@ namespace Shipwreck.Collections
 
         #endregion IComparer<T>
     }
+
+#endif
+
+#if !SHIPWRECK_COLLECTIONS_NO_ILIST
+
+#if SHIPWRECK_COLLECTIONS_PUBLIC
+
+    public
+#endif
+    static class IListBinarySearchHelper
+    {
+        private struct ComparableWrapper<T> : IBinarySearchable<T>
+            where T : IComparable<T>
+        {
+            private readonly IList<T> _List;
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ComparableWrapper(IList<T> list)
+                => _List = list;
+
+            public int Count
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List.Count;
+            }
+
+            public T this[int index]
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List[index];
+            }
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Compare(T x, T y)
+                => x.CompareTo(y);
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => (IEnumerator<T>)_List.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _List.GetEnumerator();
+        }
+
+        public static int BinarySearch<T>(this IList<T> source, T value) where T : IComparable<T>
+            => BinarySearchHelper.BinarySearch(new ComparableWrapper<T>(source), value);
+
+        public static int BinarySearch<T>(this IList<T> source, int index, int length, T value) where T : IComparable<T>
+            => BinarySearchHelper.BinarySearch(new ComparableWrapper<T>(source), index, length, value);
+
+        #region IComparer<T>
+
+        private struct ComparerWrapper<T, TComparer> : IBinarySearchable<T>
+            where TComparer : IComparer<T>
+        {
+            private readonly IList<T> _List;
+            private TComparer _Comparer;
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ComparerWrapper(IList<T> list, TComparer comparer)
+            {
+                _List = list;
+                _Comparer = comparer;
+            }
+
+            public int Count
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List.Count;
+            }
+
+            public T this[int index]
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List[index];
+            }
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Compare(T x, T y)
+                => _Comparer.Compare(x, y);
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => (IEnumerator<T>)_List.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _List.GetEnumerator();
+        }
+
+        public static int BinarySearch<T, TComparer>(this IList<T> source, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+            => BinarySearchHelper.BinarySearch(new ComparerWrapper<T, TComparer>(source, comparer), value);
+
+        public static int BinarySearch<T, TComparer>(this IList<T> source, int index, int length, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+            => BinarySearchHelper.BinarySearch(new ComparerWrapper<T, TComparer>(source, comparer), index, length, value);
+
+        #endregion IComparer<T>
+    }
+
+#endif
+
+#if !SHIPWRECK_COLLECTIONS_NO_IREADONLYLIST
+
+#if SHIPWRECK_COLLECTIONS_PUBLIC
+
+    public
+#endif
+    static class IReadOnlyListBinarySearchHelper
+    {
+        private struct ComparableWrapper<T> : IBinarySearchable<T>
+            where T : IComparable<T>
+        {
+            private readonly IReadOnlyList<T> _List;
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ComparableWrapper(IReadOnlyList<T> list)
+                => _List = list;
+
+            public int Count
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List.Count;
+            }
+
+            public T this[int index]
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List[index];
+            }
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Compare(T x, T y)
+                => x.CompareTo(y);
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => (IEnumerator<T>)_List.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _List.GetEnumerator();
+        }
+
+        public static int BinarySearch<T>(this IReadOnlyList<T> source, T value) where T : IComparable<T>
+            => BinarySearchHelper.BinarySearch(new ComparableWrapper<T>(source), value);
+
+        public static int BinarySearch<T>(this IReadOnlyList<T> source, int index, int length, T value) where T : IComparable<T>
+            => BinarySearchHelper.BinarySearch(new ComparableWrapper<T>(source), index, length, value);
+
+        #region IComparer<T>
+
+        private struct ComparerWrapper<T, TComparer> : IBinarySearchable<T>
+            where TComparer : IComparer<T>
+        {
+            private readonly IReadOnlyList<T> _List;
+            private TComparer _Comparer;
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public ComparerWrapper(IReadOnlyList<T> list, TComparer comparer)
+            {
+                _List = list;
+                _Comparer = comparer;
+            }
+
+            public int Count
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List.Count;
+            }
+
+            public T this[int index]
+            {
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+                [TargetedPatchingOptOut("")]
+#endif
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => _List[index];
+            }
+
+#if !SHIPWRECK_COLLECTIONS_NO_TARGETED_PATCHING_OPT_OUT
+            [TargetedPatchingOptOut("")]
+#endif
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public int Compare(T x, T y)
+                => _Comparer.Compare(x, y);
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => (IEnumerator<T>)_List.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _List.GetEnumerator();
+        }
+
+        public static int BinarySearch<T, TComparer>(this IReadOnlyList<T> source, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+            => BinarySearchHelper.BinarySearch(new ComparerWrapper<T, TComparer>(source, comparer), value);
+
+        public static int BinarySearch<T, TComparer>(this IReadOnlyList<T> source, int index, int length, T value, TComparer comparer)
+            where TComparer : IComparer<T>
+            => BinarySearchHelper.BinarySearch(new ComparerWrapper<T, TComparer>(source, comparer), index, length, value);
+
+        #endregion IComparer<T>
+    }
+
+#endif
 }
