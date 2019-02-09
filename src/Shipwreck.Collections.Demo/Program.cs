@@ -23,6 +23,14 @@ namespace Shipwreck.Collections.Demo
             public int Compare(ValueClass x, ValueClass y)
                 => x.Value - y.Value;
         }
+        private class  ClassComparer : IComparer<int>, IComparer<ValueClass>
+        {
+            public int Compare(int x, int y)
+                => x - y;
+
+            public int Compare(ValueClass x, ValueClass y)
+                => x.Value - y.Value;
+        }
 
         private class ValueClass : IComparable<ValueClass>
         {
@@ -117,7 +125,7 @@ namespace Shipwreck.Collections.Demo
         {
             Console.WriteLine("Testing Array with IComparer<T>");
 
-            IComparer<int> bc = new Comparer();
+            IComparer<int> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
@@ -196,7 +204,7 @@ namespace Shipwreck.Collections.Demo
             Console.WriteLine("Testing List<T> with IComparer<T>");
 
             var list = new List<int>(array);
-            IComparer<int> bc = new Comparer();
+            IComparer<int> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
@@ -275,7 +283,7 @@ namespace Shipwreck.Collections.Demo
             Console.WriteLine("Testing Collection<T> with IComparer<T>");
 
             var list = new Collection<int>(array);
-            IComparer<int> bc = new Comparer();
+            IComparer<int> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
@@ -319,7 +327,7 @@ namespace Shipwreck.Collections.Demo
         {
             Console.WriteLine("Testing Array with IComparer<T>");
 
-            IComparer<ValueClass> bc = new Comparer();
+            IComparer<ValueClass> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
@@ -360,7 +368,7 @@ namespace Shipwreck.Collections.Demo
             Console.WriteLine("Testing List<T> with IComparer<T>");
 
             var list = new List<ValueClass>(array);
-            IComparer<ValueClass> bc = new Comparer();
+            IComparer<ValueClass> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
@@ -401,7 +409,7 @@ namespace Shipwreck.Collections.Demo
             Console.WriteLine("Testing Collection<T> with IComparer<T>");
 
             var list = new Collection<ValueClass>(array);
-            IComparer<ValueClass> bc = new Comparer();
+            IComparer<ValueClass> bc = new ClassComparer();
             var c = new Comparer();
 
             for (var i = 1; i <= RUN_COUNT; i++)
