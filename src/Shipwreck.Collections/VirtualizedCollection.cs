@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 
 namespace Shipwreck.Collections
 {
-    public abstract class VirtualizedCollection<T>
+    public abstract class VirtualizedCollection<T> : INotifyPropertyChanged, IList<T>, IReadOnlyList<T>
         where T : class
     {
         protected struct SearchResult
@@ -42,12 +45,38 @@ namespace Shipwreck.Collections
             public bool HasItems
                 => _Items != null;
 
-            public Task LoadingTask { get; set; }
+            private Task _LoadingTask;
+
+            public Task LoadingTask
+            {
+                get => _LoadingTask;
+                set
+                {
+                    _LoadingTask = value;
+                    State = value == null ? PageState.NotLoaded : PageState.Loading;
+                }
+            }
+
+            public PageState State { get; internal set; }
 
             public void SetItems(IReadOnlyList<T> items)
             {
-
+                for (var i = 0; i < items.Count; i++)
+                {
+                    Items[i] = items[i];
+                }
+                State = PageState.Loaded;
             }
+
+            public void Invalidate() => State = PageState.Invalid;
+        }
+
+        protected enum PageState
+        {
+            NotLoaded,
+            Loading,
+            Loaded,
+            Invalid
         }
 
         protected class ItemPageComparer : IComparer<ItemPage>
@@ -63,16 +92,46 @@ namespace Shipwreck.Collections
 
         protected VirtualizedCollection(int pageSize)
         {
+            if (pageSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pageSize));
+            }
             SyncRoot = new object();
-            PageSize = pageSize;
+            _PageSize = pageSize;
             _Pages = new List<ItemPage>();
         }
 
-        protected int PageSize { get; }
+        #region PageSize
+
+        private int _PageSize;
+
+        public int PageSize
+        {
+            get => _PageSize;
+            set
+            {
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                lock (SyncRoot)
+                {
+                    if (value != _PageSize)
+                    {
+                        _PageSize = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PageSize)));
+                    }
+                }
+            }
+        }
+
+        #endregion PageSize
 
         #region Count
 
         private int? _Count;
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public int Count
         {
@@ -82,40 +141,89 @@ namespace Shipwreck.Collections
                 {
                     if (_Count == null && _Pages.Count == 0)
                     {
-                        BeginLoad(0, PageSize);
+                        BeginLoad(GetPageFor(0));
                     }
                     return _Count ?? 0;
                 }
             }
-            private set => _Count = value;
+            private set
+            {
+                lock (SyncRoot)
+                {
+                    if ((_Count ?? 0) != value)
+                    {
+                        _Count = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Count)));
+                    }
+                }
+            }
         }
 
         #endregion Count
 
-        //public T this[int index]
-        //{
-        //    get
-        //    {
-        //    }
-        //}
-
-        protected void BeginLoad(int startIndex, int pageSize)
+        public T this[int index]
         {
+            get
+            {
+                lock (SyncRoot)
+                {
+                    var p = GetPageFor(index);
+                    if (p.State == PageState.NotLoaded
+                        || p.State == PageState.Invalid)
+                    {
+                        BeginLoad(p = GetOrCreatePage(index));
+                    }
+                    return p.Items[index - p.StartIndex];
+                }
+            }
+        }
+
+        private void BeginLoad(ItemPage page)
+        {
+            page.LoadingTask = SearchAsync(page.StartIndex, page.Length).ContinueWith(t =>
+            {
+                var r = t.Result;
+                lock (SyncRoot)
+                {
+                    Count = r.TotalCount;
+                    if (r.Items?.Count > 0)
+                    {
+                        GetOrCreatePage(r.StartIndex, r.Items.Count).SetItems(r.Items);
+                    }
+                }
+            });
+        }
+
+        private ItemPage GetPageFor(int itemIndex)
+        {
+            var newPage = new ItemPage(this, itemIndex, 1);
             lock (SyncRoot)
             {
-                GetOrCreatePage(startIndex, pageSize).LoadingTask = SearchAsync(startIndex, pageSize).ContinueWith(t =>
+                var pageIndex = _Pages.BinarySearch(newPage, ItemPageComparer.Default);
+                if (pageIndex >= 0)
                 {
-                    var r = t.Result;
-                    lock (SyncRoot)
+                    return _Pages[pageIndex];
+                }
+                else
+                {
+                    pageIndex = ~pageIndex;
+                    if (pageIndex > 0)
                     {
-                        Count = r.TotalCount;
-                        if (r.Items?.Count > 0)
+                        var pp = _Pages[pageIndex - 1];
+                        if (pp.StartIndex <= itemIndex && itemIndex <= pp.LastIndex)
                         {
-                            GetOrCreatePage(r.StartIndex, r.Items.Count).SetItems(r.Items);
+                            return pp;
                         }
                     }
-                });
+                }
+                return GetOrCreatePage(itemIndex);
             }
+        }
+
+        private ItemPage GetOrCreatePage(int itemIndex)
+        {
+            var pi = itemIndex / PageSize;
+            return GetOrCreatePage(pi, PageSize);
         }
 
         private ItemPage GetOrCreatePage(int startIndex, int pageSize)
@@ -177,7 +285,11 @@ namespace Shipwreck.Collections
                             {
                                 if (aftPart == null)
                                 {
-                                    _Pages[pageIndex] = aftPart = new ItemPage(this, lastIndex + 1, page.LastIndex - lastIndex);
+                                    _Pages[pageIndex] = aftPart = new ItemPage(this, lastIndex + 1, page.LastIndex - lastIndex)
+                                    {
+                                        LoadingTask = page.LoadingTask,
+                                        State = page.State
+                                    };
                                 }
                                 aftPart.Items[ei - aftPart.StartIndex] = e;
                             }
@@ -202,7 +314,11 @@ namespace Shipwreck.Collections
                         {
                             if (prevPart == null)
                             {
-                                prevPart = new ItemPage(this, page.StartIndex, startIndex - page.StartIndex);
+                                prevPart = new ItemPage(this, page.StartIndex, startIndex - page.StartIndex)
+                                {
+                                    LoadingTask = page.LoadingTask,
+                                    State = page.State
+                                };
                                 _Pages.Insert(--pageIndex, prevPart);
                             }
                             prevPart.Items[ei - page.StartIndex] = e;
@@ -215,5 +331,127 @@ namespace Shipwreck.Collections
         }
 
         protected abstract Task<SearchResult> SearchAsync(int startIndex, int pageSize);
+
+        #region IList<T>
+
+        T IList<T>.this[int index]
+        {
+            get => this[index];
+            set => throw new NotSupportedException();
+        }
+
+        int IList<T>.IndexOf(T item)
+        {
+            // TODO: support item=null
+
+            lock (SyncRoot)
+            {
+                foreach (var p in _Pages)
+                {
+                    if (p.HasItems
+                        && p.State != PageState.Invalid)
+                    {
+                        var li = Array.IndexOf(p.Items, item);
+                        if (li >= 0)
+                        {
+                            return p.StartIndex + li;
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
+
+        void IList<T>.Insert(int index, T item)
+            => throw new NotSupportedException();
+
+        void IList<T>.RemoveAt(int index)
+            => throw new NotSupportedException();
+
+        #endregion IList<T>
+
+        #region ICollection<T>
+
+        bool ICollection<T>.IsReadOnly => false;
+
+        void ICollection<T>.Add(T item)
+            => throw new NotSupportedException();
+
+        void ICollection<T>.Clear()
+            => throw new NotSupportedException();
+
+        bool ICollection<T>.Contains(T item)
+        {
+            // TODO: support item=null
+
+            lock (SyncRoot)
+            {
+                foreach (var p in _Pages)
+                {
+                    if (p.HasItems
+                        && p.State != PageState.Invalid
+                        && Array.IndexOf(p.Items, item) >= 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+        {
+            var s = 0;
+            lock (SyncRoot)
+            {
+                foreach (var p in _Pages)
+                {
+                    if (p.HasItems)
+                    {
+                        if (p.StartIndex > s)
+                        {
+                            Array.Clear(array, s + arrayIndex, p.StartIndex - s);
+                        }
+                        Array.Copy(p.Items, 0, array, arrayIndex + p.StartIndex, p.Length);
+                    }
+                    else
+                    {
+                        Array.Clear(array, s + arrayIndex, p.LastIndex - s + 1);
+                    }
+                    s = p.LastIndex + 1;
+                }
+                if (s < Count)
+                {
+                    Array.Clear(array, s + arrayIndex, Count - s);
+                }
+            }
+        }
+
+        bool ICollection<T>.Remove(T item)
+            => throw new NotSupportedException();
+
+        #endregion ICollection<T>
+
+        #region IEnumerable<T>
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            lock (SyncRoot)
+            {
+                var c = Count;
+                for (var i = 0; i < c; i++)
+                {
+                    yield return this[i];
+                }
+            }
+        }
+
+        #endregion IEnumerable<T>
+
+        #region IEnumerable
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        #endregion IEnumerable
     }
 }
