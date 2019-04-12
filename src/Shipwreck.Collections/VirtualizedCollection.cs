@@ -23,9 +23,9 @@ namespace Shipwreck.Collections
             public IReadOnlyList<T> Items { get; }
         }
 
-        protected class ItemPage
+        protected class Page
         {
-            public ItemPage(VirtualizedCollection<T> collection, int startIndex, int length)
+            public Page(VirtualizedCollection<T> collection, int startIndex, int length)
             {
                 Collection = collection;
                 StartIndex = startIndex;
@@ -79,16 +79,16 @@ namespace Shipwreck.Collections
             Invalid
         }
 
-        protected class ItemPageComparer : IComparer<ItemPage>
+        protected class PageComparer : IComparer<Page>
         {
-            public static ItemPageComparer Default { get; } = new ItemPageComparer();
+            public static PageComparer Default { get; } = new PageComparer();
 
-            public int Compare(ItemPage x, ItemPage y)
+            public int Compare(Page x, Page y)
                 => x.StartIndex - y.StartIndex;
         }
 
         public object SyncRoot { get; }
-        private readonly List<ItemPage> _Pages;
+        private readonly List<Page> _Pages;
 
         protected VirtualizedCollection(int pageSize)
         {
@@ -98,7 +98,7 @@ namespace Shipwreck.Collections
             }
             SyncRoot = new object();
             _PageSize = pageSize;
-            _Pages = new List<ItemPage>();
+            _Pages = new List<Page>();
         }
 
         #region PageSize
@@ -178,7 +178,7 @@ namespace Shipwreck.Collections
             }
         }
 
-        private void BeginLoad(ItemPage page)
+        private void BeginLoad(Page page)
         {
             page.LoadingTask = SearchAsync(page.StartIndex, page.Length).ContinueWith(t =>
             {
@@ -194,12 +194,12 @@ namespace Shipwreck.Collections
             });
         }
 
-        private ItemPage GetPageFor(int itemIndex)
+        private Page GetPageFor(int itemIndex)
         {
-            var newPage = new ItemPage(this, itemIndex, 1);
+            var newPage = new Page(this, itemIndex, 1);
             lock (SyncRoot)
             {
-                var pageIndex = _Pages.BinarySearch(newPage, ItemPageComparer.Default);
+                var pageIndex = _Pages.BinarySearch(newPage, PageComparer.Default);
                 if (pageIndex >= 0)
                 {
                     return _Pages[pageIndex];
@@ -220,18 +220,18 @@ namespace Shipwreck.Collections
             }
         }
 
-        private ItemPage GetOrCreatePage(int itemIndex)
+        private Page GetOrCreatePage(int itemIndex)
         {
             var pi = itemIndex / PageSize;
             return GetOrCreatePage(pi, PageSize);
         }
 
-        private ItemPage GetOrCreatePage(int startIndex, int pageSize)
+        private Page GetOrCreatePage(int startIndex, int pageSize)
         {
-            var newPage = new ItemPage(this, startIndex, pageSize);
+            var newPage = new Page(this, startIndex, pageSize);
             lock (SyncRoot)
             {
-                var pageIndex = _Pages.BinarySearch(newPage, ItemPageComparer.Default);
+                var pageIndex = _Pages.BinarySearch(newPage, PageComparer.Default);
                 if (pageIndex >= 0 && _Pages[pageIndex].Length == pageSize)
                 {
                     return _Pages[pageIndex];
@@ -261,8 +261,8 @@ namespace Shipwreck.Collections
 
                 for (; pageIndex >= 0; pageIndex--)
                 {
-                    ItemPage prevPart = null;
-                    ItemPage aftPart = null;
+                    Page prevPart = null;
+                    Page aftPart = null;
                     var page = _Pages[pageIndex];
 
                     if (page.LastIndex < startIndex)
@@ -285,7 +285,7 @@ namespace Shipwreck.Collections
                             {
                                 if (aftPart == null)
                                 {
-                                    _Pages[pageIndex] = aftPart = new ItemPage(this, lastIndex + 1, page.LastIndex - lastIndex)
+                                    _Pages[pageIndex] = aftPart = new Page(this, lastIndex + 1, page.LastIndex - lastIndex)
                                     {
                                         LoadingTask = page.LoadingTask,
                                         State = page.State
@@ -314,7 +314,7 @@ namespace Shipwreck.Collections
                         {
                             if (prevPart == null)
                             {
-                                prevPart = new ItemPage(this, page.StartIndex, startIndex - page.StartIndex)
+                                prevPart = new Page(this, page.StartIndex, startIndex - page.StartIndex)
                                 {
                                     LoadingTask = page.LoadingTask,
                                     State = page.State
