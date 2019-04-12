@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Shipwreck.Collections
 {
-    public abstract class VirtualizedCollection<T> : INotifyPropertyChanged, IList<T>, IReadOnlyList<T>
+    public abstract class VirtualizedCollection<T> : INotifyPropertyChanged, IList<T>, IReadOnlyList<T>, IList
         where T : class
     {
         protected struct SearchResult
@@ -370,6 +370,44 @@ namespace Shipwreck.Collections
 
         #endregion IList<T>
 
+        #region IList
+
+        object IList.this[int index]
+        {
+            get => this[index];
+            set => throw new NotSupportedException();
+        }
+
+        bool IList.IsFixedSize => false;
+
+        bool IList.IsReadOnly => true;
+
+        int IList.Add(object value)
+            => throw new NotSupportedException();
+
+        void IList.Clear()
+            => throw new NotSupportedException();
+
+        bool IList.Contains(object value)
+            => value == null ? ((IList<T>)this).Contains(null)
+            : value is T t && ((IList<T>)this).Contains(t);
+
+        int IList.IndexOf(object value)
+            => value == null ? ((IList<T>)this).IndexOf(null)
+            : value is T t ? ((IList<T>)this).IndexOf(t)
+            : -1;
+
+        void IList.Insert(int index, object value)
+            => throw new NotSupportedException();
+
+        void IList.Remove(object value)
+            => throw new NotSupportedException();
+
+        void IList.RemoveAt(int index)
+            => throw new NotSupportedException();
+
+        #endregion IList
+
         #region ICollection<T>
 
         bool ICollection<T>.IsReadOnly => false;
@@ -431,6 +469,40 @@ namespace Shipwreck.Collections
             => throw new NotSupportedException();
 
         #endregion ICollection<T>
+
+        #region ICollection
+
+        bool ICollection.IsSynchronized => true;
+
+        void ICollection.CopyTo(Array array, int index)
+        {
+            var s = 0;
+            lock (SyncRoot)
+            {
+                foreach (var p in _Pages)
+                {
+                    if (p.HasItems)
+                    {
+                        if (p.StartIndex > s)
+                        {
+                            Array.Clear(array, s + index, p.StartIndex - s);
+                        }
+                        Array.Copy(p.Items, 0, array, index + p.StartIndex, p.Length);
+                    }
+                    else
+                    {
+                        Array.Clear(array, s + index, p.LastIndex - s + 1);
+                    }
+                    s = p.LastIndex + 1;
+                }
+                if (s < Count)
+                {
+                    Array.Clear(array, s + index, Count - s);
+                }
+            }
+        }
+
+        #endregion ICollection
 
         #region IEnumerable<T>
 
